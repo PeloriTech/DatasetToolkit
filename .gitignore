@@ -1,0 +1,8 @@
+*.pyc
+.idea
+*.xml
+venv/
+venv2/
+cfg/
+wgt/
+data/
