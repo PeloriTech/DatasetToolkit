@@ -42,6 +42,35 @@ def annotate():
     pass
 
 
+def convert(dataset_dir: str, old_annotation_dir: str, old_format: str, new_annotation_dir: str, new_format: str):
+    dataset = DatasetModel(dataset_dir, annotation_dir=old_annotation_dir)
+
+    files = dataset.get_annotations()
+    progress_bar = ProgressBar(len(files))
+
+    if old_format == 'xml':
+        AnnotationRead: AbstractRead = XMLRead
+    else:
+        print("No recognizable input format.")
+        return
+
+    if new_format == 'darknet':
+        saver: AbstractAnnotationSave = DarknetAnnotationSave()
+    else:
+        print("No recognizable output format.")
+        return
+
+    for annotation_filename in files:
+        print("filename: ", annotation_filename)
+        # try:
+        annotation_model: AnnotationModel = AnnotationRead.read(annotation_filename)
+        if len(annotation_model.objects) > 0:
+            saver.save(dataset_dir, new_annotation_dir, annotation_model, annotation_model.filename)
+        # except Exception:
+        # print("filename failed: ", annotation_filename)
+        progress_bar.lap()
+
+
 def export(dataset_dir: str, old_annotation_dir: str, old_format: str, export_file: str, new_format: str):
     dataset = DatasetModel(dataset_dir, annotation_dir=old_annotation_dir)
 
@@ -57,6 +86,8 @@ def export(dataset_dir: str, old_annotation_dir: str, old_format: str, export_fi
     if new_format == 'tfrecord':
         exporter: AbstractExport = TFRecordAnnotationSave(export_file)
         exporter.start()
+    elif new_format == 'darknet':
+        exporter: AbstractAnnotationSave = DarknetAnnotationSave()
     else:
         print("No recognizable output format.")
         return
@@ -71,7 +102,8 @@ def export(dataset_dir: str, old_annotation_dir: str, old_format: str, export_fi
         # print("filename failed: ", annotation_filename)
         progress_bar.lap()
 
-    exporter.close()
+    if exporter.close:
+        exporter.close()
 
 
 def generate_annotation_save(old_format: str) -> AbstractAnnotationSave:
